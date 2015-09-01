@@ -1,0 +1,6 @@
+name: Translate
+main: net.cubexmc.translate.Main
+description: Translate by PantherMan594 Copyright CubeXMC
+depend: [ProtocolLib]
+version: #VERSION#
+author: PantherMan594
