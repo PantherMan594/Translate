@@ -1,6 +1,6 @@
 name: Translate
 main: net.cubexmc.translate.Main
-description: Translate by PantherMan594 Copyright CubeXMC
+description: Simple but effective translator! By PantherMan594. (c) CubeXMC Network.
 depend: [ProtocolLib]
 version: #VERSION#
 author: PantherMan594
