@@ -1,5 +1,5 @@
 name: Translate
-main: Main
+main: com.pantherman594.translate.Main
 description: Simple but effective translator!
 depend: [ProtocolLib]
 version: #VERSION#
