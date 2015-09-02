@@ -7,16 +7,16 @@ import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
-import org.bukkit.plugin.java.*;
-
-import org.bukkit.event.player.*;
-
 import com.memetix.mst.translate.Translate;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.plugin.java.JavaPlugin;
 
-import org.bukkit.event.*;
-import org.bukkit.entity.*;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.UUID;
 
 public class Main extends JavaPlugin implements Listener
 {
@@ -35,7 +35,6 @@ public class Main extends JavaPlugin implements Listener
                 public void onPacketReceiving(PacketEvent event) {
                     if (event.getPacketType() == PacketType.Play.Client.SETTINGS) {
                         PacketContainer packet = event.getPacket();
-                        getLogger().info(event.getPlayer().getName() + "'s language: " + packet.getStrings().read(0).replaceAll("_\\w+", ""));
                         playerLang.put(event.getPlayer().getUniqueId(), packet.getStrings().read(0).replaceAll("_\\w+", ""));
                     }
                 }
@@ -51,12 +50,14 @@ public class Main extends JavaPlugin implements Listener
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerChat(final AsyncPlayerChatEvent event) {
-        final String s = this.getLanguage(event.getPlayer());
-        for (Player p : getServer().getOnlinePlayers()) {
-            if (!getLanguage(p).equals(s)) {
-                String tMsg = translateMessage(event.getMessage(), s, getLanguage(p), 0);
-                if (tMsg != null) {
-                    p.sendMessage(tMsg);
+        if (!event.getMessage().startsWith(">")) {
+            final String s = this.getLanguage(event.getPlayer());
+            for (Player p : getServer().getOnlinePlayers()) {
+                if (!getLanguage(p).equals(s)) {
+                    String tMsg = translateMessage(event.getMessage(), s, getLanguage(p), event.getPlayer().getDisplayName(), 0);
+                    if (tMsg != null) {
+                        p.sendMessage(tMsg);
+                    }
                 }
             }
         }
@@ -78,13 +79,13 @@ public class Main extends JavaPlugin implements Listener
         }
     }
 
-    public String translateMessage(final String message, final String from, final String to, final Integer index) {
+    public String translateMessage(final String message, final String from, final String to, final String name, final Integer index) {
         setKeys();
         try {
-            return "Translated: " + Translate.execute(message, from, to);
+            return "> " + name + ": " + Translate.execute(message, from, to);
         } catch (Exception e) {
             if (index < 10) {
-                translateMessage(message, from, to, index);
+                translateMessage(message, from, to, name, index);
             } else {
                 getLogger().warning("Translation failed. Original message: " + message);
                 getLogger().warning("Error: ");
