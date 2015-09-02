@@ -60,6 +60,8 @@ public class Main extends JavaPlugin implements Listener
                     }
                 }
             }
+        } else {
+            event.setMessage(event.getMessage().substring(1));
         }
     }
 
