@@ -1,6 +1,6 @@
 name: Translate
-main: net.cubexmc.translate.Main
-description: Simple but effective translator! By PantherMan594. (c) CubeXMC Network.
+main: Main
+description: Simple but effective translator!
 depend: [ProtocolLib]
 version: #VERSION#
 author: PantherMan594

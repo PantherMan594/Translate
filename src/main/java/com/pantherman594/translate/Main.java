@@ -1,4 +1,4 @@
-package net.cubexmc.translate;
+package com.pantherman594.translate;
 
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolLibrary;
