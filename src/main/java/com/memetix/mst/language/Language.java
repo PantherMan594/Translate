@@ -18,9 +18,13 @@
 package com.memetix.mst.language;
 
 import com.memetix.mst.MicrosoftTranslatorAPI;
+
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -88,8 +92,8 @@ public enum Language {
 	 * Enum constructor.
 	 * @param pLanguage The language identifier.
 	 */
-	private Language(final String pLanguage) {
-		language = pLanguage;
+    Language(final String pLanguage) {
+        language = pLanguage;
 	}
 	
 	public static Language fromString(final String pLanguage) {
@@ -101,15 +105,6 @@ public enum Language {
 		return null;
 	}
 	
-	/**
-	 * Returns the String representation of this language.
-	 * @return The String representation of this language.
-	 */
-	@Override
-	public String toString() {
-		return language;
-	}
-        
         public static void setKey(String pKey) {
             LanguageService.setKey(pKey);
         }
@@ -117,87 +112,97 @@ public enum Language {
         public static void setClientId(String pId) {
             LanguageService.setClientId(pId);
         }
-        public static void setClientSecret(String pSecret) {
+
+    public static void setClientSecret(String pSecret) {
             LanguageService.setClientSecret(pSecret);
+    }
+
+    public static List<String> getLanguageCodesForTranslation() throws Exception {
+        String[] codes = GetLanguagesForTranslateService.execute();
+        return Arrays.asList(codes);
         }
-        
-		/**
-		 * getName()
-		 * 
-		 * Returns the name for this language in the tongue of the specified locale
-		 * 
-		 * If the name is not cached, then it retrieves the name of ALL languages in this locale.
-		 * This is not bad behavior for 2 reasons:
-		 * 
-		 *      1) We can make a reasonable assumption that the client will request the
-		 *         name of another language in the same locale 
-		 *      2) The GetLanguageNames service call expects an array and therefore we can 
-		 *         retrieve ALL names in the same, single call anyway.
-		 * 
-		 * @return The String representation of this language's localized Name.
-		 */
-        public String getName(Language locale) throws Exception {
-            String localizedName = null;
-            if(this.localizedCache.containsKey(locale)) {
-                localizedName = this.localizedCache.get(locale);
-            } else {
-                if(this==Language.AUTO_DETECT||locale==Language.AUTO_DETECT) {
-                    localizedName = "Auto Detect";
-                } else {
-                    //If not in the cache, pre-load all the Language names for this locale
-                    String[] names = LanguageService.execute(Language.values(), locale);
-                    int i = 0;
-                    for(Language lang : Language.values()) {
-                        if(lang!=Language.AUTO_DETECT) {   
-                            lang.localizedCache.put(locale,names[i]);
-                            i++;
-                        }
-                    }
-                    localizedName = this.localizedCache.get(locale);
-                }
-            }
-            return localizedName;
-        }
-        
-     public static List<String> getLanguageCodesForTranslation() throws Exception {
-            String[] codes = GetLanguagesForTranslateService.execute();
-            return Arrays.asList(codes);
-        }
-        
-     /**
+
+    /**
      * values(Language locale)
-     * 
-	 * Returns a map of all languages, keyed and sorted by 
+     * <p>
+     * Returns a map of all languages, keyed and sorted by
      * the localized name in the tongue of the specified locale
-     * 
+     * <p>
      * It returns a map, sorted alphanumerically by the keys()
-     * 
+     * <p>
      * Key: The localized language name
      * Value: The Language instance
      *
      * @param locale The Language we should localize the Language names with
-	 * @return A Map of all supported languages stored by their localized name.
-	 */
-        public static Map<String,Language> values(Language locale) throws Exception {
-            Map<String,Language>localizedMap = new TreeMap<String,Language>(); 
-            for(Language lang : Language.values()) {
-                if(lang==Language.AUTO_DETECT)
-                    localizedMap.put(Language.AUTO_DETECT.name(), lang);
-                else
-                    localizedMap.put(lang.getName(locale), lang);
+     * @return A Map of all supported languages stored by their localized name.
+     */
+    public static Map<String, Language> values(Language locale) throws Exception {
+        Map<String, Language> localizedMap = new TreeMap<String, Language>();
+        for (Language lang : Language.values()) {
+            if (lang == Language.AUTO_DETECT)
+                localizedMap.put(Language.AUTO_DETECT.name(), lang);
+            else
+                localizedMap.put(lang.getName(locale), lang);
+        }
+        return localizedMap;
+    }
+
+    // Flushes the localized name cache for all languages
+    public static void flushNameCache() {
+        for (Language lang : Language.values())
+            lang.flushCache();
+    }
+
+    /**
+     * Returns the String representation of this language.
+     * @return The String representation of this language.
+     */
+    @Override
+    public String toString() {
+        return language;
+    }
+
+    /**
+     * getName()
+     * <p>
+     * Returns the name for this language in the tongue of the specified locale
+     * <p>
+     * If the name is not cached, then it retrieves the name of ALL languages in this locale.
+     * This is not bad behavior for 2 reasons:
+     * <p>
+     * 1) We can make a reasonable assumption that the client will request the
+     * name of another language in the same locale
+     * 2) The GetLanguageNames service call expects an array and therefore we can
+     * retrieve ALL names in the same, single call anyway.
+     *
+     * @return The String representation of this language's localized Name.
+     */
+    public String getName(Language locale) throws Exception {
+        String localizedName = null;
+        if (this.localizedCache.containsKey(locale)) {
+            localizedName = this.localizedCache.get(locale);
+        } else {
+            if (this == Language.AUTO_DETECT || locale == Language.AUTO_DETECT) {
+                localizedName = "Auto Detect";
+            } else {
+                //If not in the cache, pre-load all the Language names for this locale
+                String[] names = LanguageService.execute(Language.values(), locale);
+                int i = 0;
+                for (Language lang : Language.values()) {
+                    if (lang != Language.AUTO_DETECT) {
+                        lang.localizedCache.put(locale, names[i]);
+                        i++;
+                    }
+                }
+                localizedName = this.localizedCache.get(locale);
             }
-            return localizedMap;
+        }
+            return localizedName;
         }
         
         // Flushes the localized name cache for this language
         private void flushCache() {
             this.localizedCache.clear();
-        }
-        
-        // Flushes the localized name cache for all languages
-        public static void flushNameCache() {
-            for(Language lang : Language.values())
-                lang.flushCache();
         }
         
       private final static class LanguageService extends MicrosoftTranslatorAPI {
@@ -206,7 +211,6 @@ public enum Language {
         /**
          * Detects the language of a supplied String.
          * 
-         * @param text The String to detect the language of.
          * @return A DetectResult object containing the language, confidence and reliability.
          * @throws Exception on error.
          */
@@ -236,7 +240,6 @@ public enum Language {
         /**
          * Detects the language of a supplied String.
          * 
-         * @param text The String to detect the language of.
          * @return A DetectResult object containing the language, confidence and reliability.
          * @throws Exception on error.
          */

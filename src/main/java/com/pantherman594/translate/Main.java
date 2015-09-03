@@ -7,7 +7,9 @@ import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
+import com.memetix.mst.language.Language;
 import com.memetix.mst.translate.Translate;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -16,6 +18,7 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 public class Main extends JavaPlugin implements Listener
@@ -24,12 +27,15 @@ public class Main extends JavaPlugin implements Listener
     private static Integer keyId = 0;
     private static HashMap<Integer, String> ids = new HashMap<>();
     private static HashMap<Integer, String> secrets = new HashMap<>();
+    private static String defaultLang = "";
+    private static List<String> codes;
 
     public void onEnable() {
         this.saveDefaultConfig();
         this.getServer().getPluginManager().registerEvents(this, this);
         ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
         try {
+            codes = Language.getLanguageCodesForTranslation();
             protocolManager.addPacketListener(new PacketAdapter(this, ListenerPriority.NORMAL, PacketType.Play.Client.SETTINGS) {
                 @Override
                 public void onPacketReceiving(PacketEvent event) {
@@ -46,6 +52,8 @@ public class Main extends JavaPlugin implements Listener
             secrets.put(i, this.getConfig().getString("keys." + i + ".secret"));
             i++;
         }
+        defaultLang = this.getConfig().getString("defaultlang");
+        defaultLang = (codes.contains(defaultLang)) ? defaultLang : "en";
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -58,6 +66,12 @@ public class Main extends JavaPlugin implements Listener
                     if (tMsg != null) {
                         p.sendMessage(tMsg);
                     }
+                }
+            }
+            if (!s.equals(defaultLang)) {
+                String tMsg = translateMessage(event.getMessage(), s, defaultLang, event.getPlayer().getDisplayName(), 0);
+                if (tMsg != null) {
+                    Bukkit.getConsoleSender().sendMessage(tMsg);
                 }
             }
         } else {
