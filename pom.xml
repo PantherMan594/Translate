@@ -6,6 +6,7 @@
     <groupId>com.pantherman594</groupId>
     <artifactId>Translate</artifactId>
     <version>1.0</version>
+    <packaging>jar</packaging>
     <name>Translate</name>
     <description>Simple but effective translator!</description>
     <properties>

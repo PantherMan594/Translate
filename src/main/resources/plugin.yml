@@ -4,3 +4,6 @@ description: Simple but effective translator!
 depend: [ProtocolLib]
 version: #VERSION#
 author: PantherMan594
+commands:
+  language:
+    aliases: [translate, lang]
