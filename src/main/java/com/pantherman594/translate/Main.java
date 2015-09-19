@@ -90,7 +90,8 @@ public class Main extends JavaPlugin implements Listener {
                     if (!getLanguage(p).equals(s)) {
                         tMsg = translateMessage(initialMsg, s, getLanguage(p), 0);
                     }
-                    p.sendMessage(tMsg);
+                    p.sendMessage(event.getFormat());
+                    p.sendMessage(event.getFormat().replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", tMsg));
                     recip.remove();
                 }
             }
@@ -101,7 +102,7 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void interact(InventoryClickEvent event) {
-        if (event.getCurrentItem() != null && event.getCurrentItem().getItemMeta().getDisplayName() != null) {
+        if (event.getClickedInventory().getName().equals("Languages") && event.getCurrentItem() != null && event.getCurrentItem().getItemMeta() != null && event.getCurrentItem().getItemMeta().getDisplayName() != null) {
             for (Language lang : Language.values()) {
                 if (getLangName(lang).equals(event.getCurrentItem().getItemMeta().getDisplayName())) {
                     playerLang.put(event.getWhoClicked().getUniqueId(), lang.toString());
@@ -186,6 +187,15 @@ public class Main extends JavaPlugin implements Listener {
                         playerLang.put(((Player) sender).getUniqueId(), defaultLang);
                         sender.sendMessage(ChatColor.GREEN + "Language reset to " + defaultLangFull);
                     }
+                } else if (args[0].equalsIgnoreCase("set")) {
+                    sender.sendMessage(ChatColor.RED + "Invalid language. Possible choices: ");
+                    String langList = "";
+                    for (Language lang : Language.values()) {
+                        langList += ", " + getLangName(lang);
+                    }
+                    sender.sendMessage(langList.substring(2));
+                } else {
+                    sender.sendMessage(ChatColor.RED + "Usage: /lang [reset|set <lang>]");
                 }
             } else if (args.length == 2) {
                 if (args[0].equalsIgnoreCase("set")) {
@@ -194,6 +204,7 @@ public class Main extends JavaPlugin implements Listener {
                         if (!success && getLangName(lang).equalsIgnoreCase(args[1])) {
                             playerLang.put(((Player) sender).getUniqueId(), lang.toString());
                             sender.sendMessage(ChatColor.GREEN + "Language changed to " + getLangName(lang));
+                            success = true;
                         }
                     }
                     if (!success) {
