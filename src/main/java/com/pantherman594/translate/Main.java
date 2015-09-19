@@ -90,7 +90,6 @@ public class Main extends JavaPlugin implements Listener {
                     if (!getLanguage(p).equals(s)) {
                         tMsg = translateMessage(initialMsg, s, getLanguage(p), 0);
                     }
-                    p.sendMessage(event.getFormat());
                     p.sendMessage(event.getFormat().replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", tMsg));
                     recip.remove();
                 }
