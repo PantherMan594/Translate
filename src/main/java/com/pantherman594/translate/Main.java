@@ -61,8 +61,9 @@ public class Main extends JavaPlugin implements Listener {
         }
         setKeys();
         langInv = open();
+        String defaultConfig = this.getConfig().getString("defaultlang");
         for (Language lang : Language.values()) {
-            if (this.getConfig().getString("defaultlang").equals(lang.toString())) {
+            if (defaultConfig.equals(lang.toString())) {
                 defaultLang = lang.toString();
                 defaultLangFull = getLangName(lang);
             }
@@ -71,7 +72,7 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerChat(final AsyncPlayerChatEvent event) {
-        if (!event.getMessage().startsWith(">")) {
+        if (!event.getMessage().startsWith(this.getConfig().getString("bypassprefix"))) {
             final String initialMsg = event.getMessage();
             final String s = this.getLanguage(event.getPlayer());
             if (!s.equals(defaultLang)) {
@@ -82,7 +83,7 @@ public class Main extends JavaPlugin implements Listener {
                 final Player p = recip.next();
                 if (!getLanguage(p).equals(defaultLang)) {
                     if (!getLanguage(p).equals(s)) {
-                        String tMsg = "> " + event.getPlayer().getDisplayName() + ": " + translateMessage(initialMsg, s, getLanguage(p), 0);
+                        String tMsg = translateMessage(initialMsg, s, getLanguage(p), 0);
                         if (tMsg != null) {
                             p.sendMessage(tMsg);
                             recip.remove();
