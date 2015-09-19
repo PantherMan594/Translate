@@ -72,6 +72,7 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerChat(final AsyncPlayerChatEvent event) {
         if (!event.getMessage().startsWith(">")) {
+            final String initialMsg = event.getMessage();
             final String s = this.getLanguage(event.getPlayer());
             if (!s.equals(defaultLang)) {
                 event.setMessage(translateMessage(event.getMessage(), s, defaultLang, 0));
@@ -80,9 +81,14 @@ public class Main extends JavaPlugin implements Listener {
             while (recip.hasNext()) {
                 final Player p = recip.next();
                 if (!getLanguage(p).equals(defaultLang)) {
-                    String tMsg = "> " + event.getPlayer().getDisplayName() + ": " + translateMessage(event.getMessage(), defaultLang, getLanguage(p), 0);
-                    if (tMsg != null) {
-                        p.sendMessage(tMsg);
+                    if (!getLanguage(p).equals(s)) {
+                        String tMsg = "> " + event.getPlayer().getDisplayName() + ": " + translateMessage(initialMsg, s, getLanguage(p), 0);
+                        if (tMsg != null) {
+                            p.sendMessage(tMsg);
+                            recip.remove();
+                        }
+                    } else {
+                        p.sendMessage(initialMsg);
                         recip.remove();
                     }
                 }
