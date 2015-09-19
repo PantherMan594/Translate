@@ -68,6 +68,10 @@ public class Main extends JavaPlugin implements Listener {
                 defaultLangFull = getLangName(lang);
             }
         }
+        if (defaultLang == null) {
+            defaultLang = Language.ENGLISH.toString();
+            defaultLangFull = getLangName(Language.ENGLISH);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -82,16 +86,12 @@ public class Main extends JavaPlugin implements Listener {
             while (recip.hasNext()) {
                 final Player p = recip.next();
                 if (!getLanguage(p).equals(defaultLang)) {
+                    String tMsg = initialMsg;
                     if (!getLanguage(p).equals(s)) {
-                        String tMsg = translateMessage(initialMsg, s, getLanguage(p), 0);
-                        if (tMsg != null) {
-                            p.sendMessage(tMsg);
-                            recip.remove();
-                        }
-                    } else {
-                        p.sendMessage(initialMsg);
-                        recip.remove();
+                        tMsg = translateMessage(initialMsg, s, getLanguage(p), 0);
                     }
+                    p.sendMessage(tMsg);
+                    recip.remove();
                 }
             }
         } else {
@@ -143,7 +143,7 @@ public class Main extends JavaPlugin implements Listener {
                 e.printStackTrace();
             }
         }
-        return null;
+        return message;
     }
 
     public String getLangName(final Language lang) {
