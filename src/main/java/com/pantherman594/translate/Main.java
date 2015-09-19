@@ -26,6 +26,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.UUID;
 
 public class Main extends JavaPlugin implements Listener {
@@ -68,22 +69,22 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerChat(final AsyncPlayerChatEvent event) {
         if (!event.getMessage().startsWith(">")) {
             final String s = this.getLanguage(event.getPlayer());
-            for (Player p : getServer().getOnlinePlayers()) {
-                if (!getLanguage(p).equals(s)) {
-                    String tMsg = "> " + event.getPlayer().getDisplayName() + ": " + translateMessage(event.getMessage(), s, getLanguage(p), 0);
+            if (!s.equals(defaultLang)) {
+                event.setMessage(translateMessage(event.getMessage(), s, defaultLang, 0));
+            }
+            final Iterator<Player> recip = event.getRecipients().iterator();
+            while (recip.hasNext()) {
+                final Player p = recip.next();
+                if (!getLanguage(p).equals(defaultLang)) {
+                    String tMsg = "> " + event.getPlayer().getDisplayName() + ": " + translateMessage(event.getMessage(), defaultLang, getLanguage(p), 0);
                     if (tMsg != null) {
                         p.sendMessage(tMsg);
+                        recip.remove();
                     }
-                }
-            }
-            if (!s.equals(defaultLang)) {
-                String tMsg = "> " + event.getPlayer().getDisplayName() + ": " + translateMessage(event.getMessage(), s, defaultLang, 0);
-                if (tMsg != null) {
-                    Bukkit.getConsoleSender().sendMessage(tMsg);
                 }
             }
         } else {
@@ -147,7 +148,7 @@ public class Main extends JavaPlugin implements Listener {
         return null;
     }
 
-    private Inventory open(){
+    private Inventory open() {
         int i = 0;
         Inventory inv = Bukkit.createInventory(null, 54, "Languages");
         for (Language lang : Language.values()) {
@@ -187,7 +188,8 @@ public class Main extends JavaPlugin implements Listener {
                             playerLang.put(((Player) sender).getUniqueId(), lang.toString());
                             sender.sendMessage(ChatColor.GREEN + "Language changed to " + getLangName(lang));
                         }
-                    } if (!success) {
+                    }
+                    if (!success) {
                         sender.sendMessage(ChatColor.RED + "Invalid language. Possible choices: ");
                         String langList = "";
                         for (Language lang : Language.values()) {
