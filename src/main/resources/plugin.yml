@@ -1,7 +1,7 @@
 name: Translate
 main: com.pantherman594.translate.Main
-description: Simple but effective translator!
-depend: [ProtocolLib]
+description: Powerful and effective hands-free translator!
+softdepend: [ProtocolLib, Factions]
 version: #VERSION#
 author: PantherMan594
 commands:

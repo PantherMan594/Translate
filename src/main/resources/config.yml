@@ -1,5 +1,7 @@
 defaultlang: 'en'
 bypassprefix: '>'
+translateall: 'true'
+ignorecommands: 'true'
 keys:
   '0':
     id: 'Tharsen'
