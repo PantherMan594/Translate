@@ -138,46 +138,48 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerChat(final AsyncPlayerChatEvent event) {
-        if (!event.getMessage().startsWith(this.getConfig().getString("bypassprefix"))) {
-            final String initialMsg = event.getMessage();
-            final String initialFmt = event.getFormat();
-            final String s = this.getLanguage(event.getPlayer());
-            if (!s.equals(defaultLang)) {
-                event.setMessage(translateMessage(event.getMessage(), s, defaultLang, 0));
-            }
-            for (Player p : event.getRecipients()) {
-                String tMsg = initialMsg;
-                if (factions) {
-                    String rC = ChatTagRelcolor.get().getReplacement(event.getPlayer(), p);
-                    event.setFormat(initialFmt.replaceAll("\\{[^_]+_relcolor\\}", rC));
+        if (!event.isCancelled()) {
+            if (!event.getMessage().startsWith(this.getConfig().getString("bypassprefix"))) {
+                final String initialMsg = event.getMessage();
+                final String initialFmt = event.getFormat();
+                final String s = this.getLanguage(event.getPlayer());
+                if (!s.equals(defaultLang)) {
+                    event.setMessage(translateMessage(event.getMessage(), s, defaultLang, 0));
                 }
-                if (!getLanguage(p).equals(s)) {
-                    tMsg = translateMessage(initialMsg, s, getLanguage(p), 0);
-                    try {
-                        Class.forName("net.md_5.bungee.api.chat.TextComponent");
-                        String format = event.getFormat().replace("%1$s", event.getPlayer().getDisplayName());
-                        TextComponent finalMsg = new TextComponent(TextComponent.fromLegacyText(format.replaceAll("%2\\$s.*", "")));
-                        TextComponent msg = new TextComponent(TextComponent.fromLegacyText(tMsg));
-                        msg.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(initialMsg).create()));
-                        TextComponent msg2 = new TextComponent(TextComponent.fromLegacyText(format.replaceAll(".*(?=%2\\$s.*)%2\\$s", "")));
-                        finalMsg.addExtra(msg);
-                        finalMsg.addExtra(msg2);
-                        p.spigot().sendMessage(finalMsg);
-                    } catch (Exception e) {
+                for (Player p : event.getRecipients()) {
+                    String tMsg = initialMsg;
+                    if (factions) {
+                        String rC = ChatTagRelcolor.get().getReplacement(event.getPlayer(), p);
+                        event.setFormat(initialFmt.replaceAll("\\{[^_]+_relcolor\\}", rC));
+                    }
+                    if (!getLanguage(p).equals(s)) {
+                        tMsg = translateMessage(initialMsg, s, getLanguage(p), 0);
+                        try {
+                            Class.forName("net.md_5.bungee.api.chat.TextComponent");
+                            String format = event.getFormat().replace("%1$s", event.getPlayer().getDisplayName());
+                            TextComponent finalMsg = new TextComponent(TextComponent.fromLegacyText(format.replaceAll("%2\\$s.*", "")));
+                            TextComponent msg = new TextComponent(TextComponent.fromLegacyText(tMsg));
+                            msg.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(initialMsg).create()));
+                            TextComponent msg2 = new TextComponent(TextComponent.fromLegacyText(format.replaceAll(".*(?=%2\\$s.*)%2\\$s", "")));
+                            finalMsg.addExtra(msg);
+                            finalMsg.addExtra(msg2);
+                            p.spigot().sendMessage(finalMsg);
+                        } catch (Exception e) {
+                            p.sendMessage(event.getFormat().replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", tMsg));
+                        }
+                    } else {
                         p.sendMessage(event.getFormat().replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", tMsg));
                     }
-                } else {
-                    p.sendMessage(event.getFormat().replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", tMsg));
                 }
+                if (factions) {
+                    String rC = ChatTagRelcolor.get().getReplacement(event.getPlayer(), Bukkit.getConsoleSender());
+                    event.setFormat(initialFmt.replaceAll("\\{[^_]+_relcolor\\}", rC));
+                }
+                Bukkit.getConsoleSender().sendMessage(event.getFormat().replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", event.getMessage()));
+                event.setCancelled(true);
+            } else {
+                event.setMessage(event.getMessage().substring(1));
             }
-            if (factions) {
-                String rC = ChatTagRelcolor.get().getReplacement(event.getPlayer(), Bukkit.getConsoleSender());
-                event.setFormat(initialFmt.replaceAll("\\{[^_]+_relcolor\\}", rC));
-            }
-            Bukkit.getConsoleSender().sendMessage(event.getFormat().replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", event.getMessage()));
-            event.setCancelled(true);
-        } else {
-            event.setMessage(event.getMessage().substring(1));
         }
     }
 

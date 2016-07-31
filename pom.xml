@@ -11,7 +11,7 @@
     <description>Powerful and effective hands-free translator!</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spigot.version>1.9-R0.1-SNAPSHOT</spigot.version>
+        <spigot.version>1.10-R0.1-SNAPSHOT</spigot.version>
     </properties>
     <build>
         <defaultGoal>clean package</defaultGoal>
