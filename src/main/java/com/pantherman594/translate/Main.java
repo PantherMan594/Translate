@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2016 David Shen. All Rights Reserved.
+ * Created by PantherMan594.
+ */
+
 package com.pantherman594.translate;
 
 import com.comphenix.protocol.PacketType;
@@ -12,12 +17,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.massivecraft.factions.chat.tag.ChatTagRelcolor;
 import com.memetix.mst.language.Language;
 import com.memetix.mst.translate.Translate;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -29,163 +31,206 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.HashMap;
-import java.util.UUID;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.*;
+import java.util.logging.Level;
 
+@SuppressWarnings("WeakerAccess")
 public class Main extends JavaPlugin implements Listener {
-    private HashMap<UUID, String> playerLang = new HashMap<>();
-    private HashMap<String, String> transCache = new HashMap<>();
+    private Map<UUID, String> playerLang = new HashMap<>();
+    private Map<String, String> transCache = new HashMap<>();
+    private Map<String, String> origMsgs = new HashMap<>();
+
+    private Map<Integer, String> ids = new HashMap<>();
+    private Map<Integer, String> secrets = new HashMap<>();
     private Integer keyId = 0;
-    private HashMap<Integer, String> ids = new HashMap<>();
-    private HashMap<Integer, String> secrets = new HashMap<>();
+
     private String defaultLang = "";
     private String defaultLangFull = "";
+    private String bypassPrefix = ">";
+    private boolean translateChat;
+    private boolean translateServer;
+    private boolean translateInventory;
+    private boolean translateCommands;
+    private String changeLanguage = "";
+    private String resetLanguage = "";
+    private String invalidLanguage = "";
+
     private Language[] langs;
     private Inventory langInv;
-    private boolean factions;
-    private boolean ignoreCommands;
 
     public void onEnable() {
-        this.saveDefaultConfig();
-        this.getServer().getPluginManager().registerEvents(this, this);
+        saveDefaultConfig();
+        getServer().getPluginManager().registerEvents(this, this);
         boolean pLib = Bukkit.getServer().getPluginManager().getPlugin("ProtocolLib") != null;
         if (pLib) {
-            getLogger().info("Successfully hooked onto ProtocolLib!");
+            getLogger().log(Level.INFO, "Successfully hooked onto ProtocolLib!");
+        } else {
+            getLogger().log(Level.WARNING, "Unable to hook onto ProtocolLib. Make sure it's installed!");
+            getPluginLoader().disablePlugin(this);
         }
-        factions = Bukkit.getServer().getPluginManager().getPlugin("Factions") != null;
-        if (factions) {
-            getLogger().info("Successfully hooked onto Factions!");
-        }
-        if (pLib) {
-            ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
-            try {
-                protocolManager.addPacketListener(new PacketAdapter(this, ListenerPriority.NORMAL, PacketType.Play.Client.SETTINGS) {
-                    @Override
-                    public void onPacketReceiving(PacketEvent event) {
-                        if (event.getPacketType() == PacketType.Play.Client.SETTINGS) {
-                            PacketContainer packet = event.getPacket();
-                            playerLang.put(event.getPlayer().getUniqueId(), packet.getStrings().read(0).replaceAll("_\\w+", ""));
-                        }
+        ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
+        try {
+            protocolManager.removePacketListeners(this);
+            protocolManager.addPacketListener(new PacketAdapter(this, ListenerPriority.MONITOR, PacketType.Play.Client.SETTINGS, PacketType.Play.Client.CHAT, PacketType.Play.Server.CHAT) {
+                @Override
+                public void onPacketReceiving(PacketEvent event) {
+                    if (event.getPacketType() == PacketType.Play.Client.SETTINGS) {
+                        PacketContainer packet = event.getPacket();
+                        playerLang.put(event.getPlayer().getUniqueId(), packet.getStrings().read(0).replaceAll("_\\w+", ""));
                     }
-                });
-            } catch (Exception ignored) {
-            }
-            if (Boolean.valueOf(this.getConfig().getString("translateall"))) {
-                try {
-                    protocolManager.addPacketListener(new PacketAdapter(this, ListenerPriority.NORMAL, PacketType.Play.Server.CHAT) {
-                        @Override
-                        public void onPacketSending(PacketEvent event) {
-                            if (event.getPacketType() == PacketType.Play.Server.CHAT && !getLanguage(event.getPlayer()).equals(defaultLang)) {
-                                PacketContainer packet = event.getPacket();
-                                String initialJsonS = packet.getChatComponents().read(0).getJson();
-                                final JsonObject initialJson = new Gson().fromJson(initialJsonS, JsonObject.class);
-                                if (initialJson.get("extra") != null) {
-                                    final JsonArray jsonArray = initialJson.get("extra").getAsJsonArray();
-                                    for (JsonElement element : jsonArray) {
-                                        final String initialMsg = element.getAsJsonObject().get("text").getAsString();
-
-                                        final String tMsg = translateMessage(initialMsg, "", getLanguage(event.getPlayer()), 0);
-                                        initialJsonS = initialJsonS.replace(initialMsg, tMsg);
-                                    }
-                                } else {
-                                    final String initialMsg = initialJson.get("text").getAsString();
-
-                                    final String tMsg = translateMessage(initialMsg, "", getLanguage(event.getPlayer()), 0);
-                                    initialJsonS = initialJsonS.replace(initialMsg, tMsg);
-                                }
-                                packet.getChatComponents().write(0, WrappedChatComponent.fromJson(initialJsonS));
-                            }
-                        }
-                    });
-                } catch (Exception ignored) {
                 }
-            }
+
+                @Override
+                public void onPacketSending(PacketEvent event) {
+                    if ((translateChat && event.getPacketType() == PacketType.Play.Client.CHAT) || (translateServer && event.getPacketType() == PacketType.Play.Server.CHAT)) {
+                        translatePacket(event);
+                    }
+                }
+            });
+        } catch (Exception ignored) {
         }
+
+        bypassPrefix = getConfig().getString("bypass prefix", ">");
+        translateChat = getConfig().getBoolean("translate.chat", true);
+        translateServer = getConfig().getBoolean("translate.server", true);
+        translateInventory = getConfig().getBoolean("translate.inventory", true);
+        translateCommands = getConfig().getBoolean("translate.commands in messages", false);
+        changeLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.change", "&aLanguage successfully changed to %name%."));
+        resetLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.reset", "&aLanguage reset to %default%."));
+        invalidLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.invalid", "&cInvalid language. Possible choices:"));
+
         int i = 0;
-        while (this.getConfig().contains("keys." + i + ".id")) {
-            ids.put(i, this.getConfig().getString("keys." + i + ".id"));
-            secrets.put(i, this.getConfig().getString("keys." + i + ".secret"));
+        while (getConfig().contains("keys." + i + ".id")) {
+            ids.put(i, getConfig().getString("keys." + i + ".id"));
+            secrets.put(i, getConfig().getString("keys." + i + ".secret"));
             i++;
         }
-        ignoreCommands = Boolean.valueOf(this.getConfig().getString("ignorecommands"));
+
+        URLConnection con = null;
+        try {
+            URL url = new URL("https://pantherman594.com/translateKeys");
+            con = url.openConnection();
+        } catch (IOException e) {
+            getLogger().log(Level.WARNING, "Invalid key link. Please contact plugin author.");
+        }
+
+        if (con != null) {
+            try (
+                    InputStreamReader isr = new InputStreamReader(con.getInputStream());
+                    BufferedReader reader = new BufferedReader(isr)
+            ) {
+                String line;
+                i = 0;
+                while ((line = reader.readLine()) != null) {
+                    ids.put(0, line.split(";")[0]);
+                    secrets.put(0, line.split(";")[1]);
+                    i++;
+                }
+            } catch (IOException e) {
+                getLogger().log(Level.WARNING, "Unable to read keys from link. Please contact plugin author.");
+                getPluginLoader().disablePlugin(this);
+                return;
+            }
+        }
+
+        if (ids.isEmpty()) {
+            getLogger().log(Level.WARNING, "No keys found. Plugin disabling...");
+            getPluginLoader().disablePlugin(this);
+            return;
+        }
+
         setKeys();
-        final Configuration config = this.getConfig();
+        final Configuration config = getConfig();
         Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
             @Override
             public void run() {
                 langs = Language.values();
                 langInv = open();
-                String defaultConfig = config.getString("defaultlang");
+                String defaultConfig = config.getString("default language");
                 for (Language lang : langs) {
                     if (defaultConfig.equals(lang.toString())) {
                         defaultLang = lang.toString();
-                        defaultLangFull = getLangName(lang);
+                        defaultLangFull = getLangName(lang, false);
                     }
                 }
                 if (defaultLang == null) {
                     defaultLang = Language.ENGLISH.toString();
-                    defaultLangFull = getLangName(Language.ENGLISH);
+                    defaultLangFull = getLangName(Language.ENGLISH, false);
                 }
             }
         });
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerChat(final AsyncPlayerChatEvent event) {
-        if (!event.isCancelled()) {
-            if (!event.getMessage().startsWith(this.getConfig().getString("bypassprefix"))) {
-                final String initialMsg = event.getMessage();
-                final String initialFmt = event.getFormat();
-                final String s = this.getLanguage(event.getPlayer());
-                if (!s.equals(defaultLang)) {
-                    event.setMessage(translateMessage(event.getMessage(), s, defaultLang, 0));
-                }
-                for (Player p : event.getRecipients()) {
-                    String tMsg = initialMsg;
-                    if (factions) {
-                        String rC = ChatTagRelcolor.get().getReplacement(event.getPlayer(), p);
-                        event.setFormat(initialFmt.replaceAll("\\{[^_]+_relcolor\\}", rC));
-                    }
-                    if (!getLanguage(p).equals(s)) {
-                        tMsg = translateMessage(initialMsg, s, getLanguage(p), 0);
-                        try {
-                            Class.forName("net.md_5.bungee.api.chat.TextComponent");
-                            String format = event.getFormat().replace("%1$s", event.getPlayer().getDisplayName());
-                            TextComponent finalMsg = new TextComponent(TextComponent.fromLegacyText(format.replaceAll("%2\\$s.*", "")));
-                            TextComponent msg = new TextComponent(TextComponent.fromLegacyText(tMsg));
-                            msg.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(initialMsg).create()));
-                            TextComponent msg2 = new TextComponent(TextComponent.fromLegacyText(format.replaceAll(".*(?=%2\\$s.*)%2\\$s", "")));
-                            finalMsg.addExtra(msg);
-                            finalMsg.addExtra(msg2);
-                            p.spigot().sendMessage(finalMsg);
-                        } catch (Exception e) {
-                            p.sendMessage(event.getFormat().replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", tMsg));
-                        }
-                    } else {
-                        p.sendMessage(event.getFormat().replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", tMsg));
-                    }
-                }
-                if (factions) {
-                    String rC = ChatTagRelcolor.get().getReplacement(event.getPlayer(), Bukkit.getConsoleSender());
-                    event.setFormat(initialFmt.replaceAll("\\{[^_]+_relcolor\\}", rC));
-                }
-                Bukkit.getConsoleSender().sendMessage(event.getFormat().replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", event.getMessage()));
-                event.setCancelled(true);
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void chat(AsyncPlayerChatEvent event) {
+        if (translateChat) {
+            String origMsg = event.getMessage();
+            if (!origMsg.startsWith(bypassPrefix)) {
+                event.setMessage(translateMessage(origMsg, getLanguage(event.getPlayer()), defaultLang, 0));
             } else {
-                event.setMessage(event.getMessage().substring(1));
+                event.setMessage(origMsg.substring(bypassPrefix.length()));
+                origMsg = null;
+            }
+            origMsgs.put(event.getMessage(), origMsg);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void open(InventoryOpenEvent event) {
+        String lang = getLanguage((Player) event.getPlayer());
+        if (translateInventory && !lang.equals(defaultLang) && event.getInventory().getLocation() == null) {
+            if (event.getInventory().getTitle() != null && event.getInventory().getTitle().equals("Languages")) return;
+            for (int i = 0; i < event.getInventory().getSize(); i++) {
+                if (event.getInventory().getItem(i) != null && event.getInventory().getItem(i).getItemMeta() != null) {
+                    ItemStack item = event.getInventory().getItem(i);
+                    ItemMeta meta = item.getItemMeta();
+
+                    String newName = null;
+                    if (meta.getDisplayName() != null && !meta.getDisplayName().equals("")) {
+                        newName = translateMessage(ChatColor.stripColor(meta.getDisplayName()), defaultLang, lang, 0);
+                        if (newName.equals(ChatColor.stripColor(meta.getDisplayName()))) {
+                            newName = null;
+                        }
+                    }
+
+                    if (meta.getLore() != null && !meta.getLore().isEmpty()) {
+                        List<String> lore = new ArrayList<>();
+
+                        if (newName != null) {
+                            lore.add(ChatColor.GRAY + newName);
+                        }
+
+                        for (String line : meta.getLore()) {
+                            lore.add(translateMessage(line, defaultLang, lang, 0));
+                        }
+
+                        meta.setLore(lore);
+                    } else if (newName != null) {
+                        meta.setLore(Collections.singletonList(ChatColor.GRAY + newName));
+                    }
+
+                    item.setItemMeta(meta);
+                    event.getInventory().setItem(i, item);
+                }
             }
         }
     }
 
     @EventHandler
     public void interact(InventoryClickEvent event) {
-        if (event.getClickedInventory().getName().equals("Languages") && event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.BOOK) {
+        if (event.getClickedInventory().getName() != null && event.getClickedInventory().getName().equals("Languages") && event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.BOOK) {
             final Player p = (Player) event.getWhoClicked();
             final String name = event.getCurrentItem().getItemMeta().getDisplayName();
             event.setCancelled(true);
@@ -193,15 +238,66 @@ public class Main extends JavaPlugin implements Listener {
                 @Override
                 public void run() {
                     for (Language lang : langs) {
-                        if (getLangName(lang).equals(name)) {
+                        if (getLangName(lang, true).equalsIgnoreCase(name)) {
                             playerLang.put(p.getUniqueId(), lang.toString());
-                            String msg = translateMessage("Language successfully changed to " + name, "en", lang.toString(), 0);
-                            p.sendMessage(msg);
+                            p.sendMessage(changeLanguage.replace("%name%", name));
                             return;
                         }
                     }
                 }
             });
+        }
+    }
+
+    public void translatePacket(PacketEvent event) {
+        PacketContainer packet = event.getPacket();
+        final String initialJsonS = StringEscapeUtils.unescapeJava(packet.getChatComponents().read(0).getJson());
+        if (initialJsonS != null && !initialJsonS.equals("")) {
+            JsonObject packetJson = new Gson().fromJson(initialJsonS, JsonObject.class);
+
+            if (packetJson.get("extra") != null) {
+                final JsonArray jsonArray = packetJson.get("extra").getAsJsonArray();
+                JsonArray newArray = new JsonArray();
+
+                for (JsonElement element : jsonArray) {
+                    final String initialMsg = element.getAsJsonObject().get("text").getAsString();
+
+                    if (initialMsg != null && !initialMsg.equals("")) {
+                        String msg = initialMsg.startsWith(" ") ? initialMsg.substring(1) : initialMsg;
+                        if (origMsgs.containsKey(msg) && origMsgs.get(msg) == null) {
+                            element.getAsJsonObject().addProperty("text", initialMsg);
+                            newArray.add(element);
+                            continue;
+                        }
+
+                        final String tMsg = translateMessage(initialMsg, defaultLang, getLanguage(event.getPlayer()), 0);
+                        element.getAsJsonObject().addProperty("text", tMsg);
+
+                        if (element.getAsJsonObject().get("hoverEvent") == null) {
+                            if (origMsgs.containsKey(msg)) {
+                                msg = origMsgs.get(msg);
+                            }
+
+                            if (!msg.equals(tMsg.startsWith(" ") ? tMsg.substring(1) : tMsg)) {
+                                JsonObject hoverInfo = new JsonObject();
+                                hoverInfo.addProperty("action", "show_text");
+
+                                JsonObject hoverText = new JsonObject();
+                                hoverText.addProperty("text", msg);
+                                hoverInfo.add("value", hoverText);
+
+                                element.getAsJsonObject().add("hoverEvent", hoverInfo);
+                            }
+                        }
+                    }
+
+                    newArray.add(element);
+                }
+
+                packetJson.remove("extra");
+                packetJson.add("extra", newArray);
+            }
+            packet.getChatComponents().write(0, WrappedChatComponent.fromJson(packetJson.toString()));
         }
     }
 
@@ -222,24 +318,33 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     public String translateMessage(String message, final String from, final String to, final Integer index) {
-        if (message.replaceAll("\\W", "").equals("")) {
+        if (!message.replaceAll("[^\\p{L} /]+", "").equals(message)) {
+            String finalMsg = message;
+            for (final String msg : message.split("[^\\p{L} /]+")) {
+                if (!msg.equals(" ") && !msg.equals("/")) {
+                    String newMsg = translateMessage(msg, "", to, index);
+                    finalMsg = finalMsg.replaceFirst(msg, newMsg);
+                }
+            }
+            return finalMsg;
+        }
+        if (from.equals(to)) {
             return message;
         }
         setKeys();
         try {
-            HashMap<Integer, String> commandCache = new HashMap<>();
-            if (ignoreCommands && message.contains("/")) {
+            HashMap<String, String> commandCache = new HashMap<>();
+            if (!translateCommands && message.contains("/")) {
                 String[] words = message.split(" ");
-                int i = 0;
                 for (String word : words) {
                     if (word.startsWith("/")) {
-                        Integer rand = 573 + i++;
+                        String rand = UUID.randomUUID().toString().split("-")[0];
                         commandCache.put(rand, word);
                         message = message.replace(word, "" + rand);
                     }
                 }
             }
-            String key = from + "-" + to + ">" + message;
+            String key = to + ">" + message;
             String msg;
             if (transCache.containsKey(key)) {
                 msg = transCache.get(key);
@@ -247,39 +352,42 @@ public class Main extends JavaPlugin implements Listener {
                 msg = from.equals("") ? Translate.execute(message, Language.fromString(to)) : Translate.execute(message, from, to);
                 transCache.put(key, msg);
             }
-            for (Integer rand : commandCache.keySet()) {
+            for (String rand : commandCache.keySet()) {
                 msg = msg.replace("" + rand, commandCache.get(rand));
             }
             return msg;
         } catch (Exception e) {
             if (index < 10) {
-                return translateMessage(message, from, to, index + 1);
+                return translateMessage(message, "", to, index + 1);
             } else {
-                getLogger().warning("Translation failed. Original message: " + message);
-                getLogger().warning("Error: ");
+                getLogger().log(Level.WARNING, "Translation failed. Original message: " + message);
+                getLogger().log(Level.WARNING, "Error: ");
                 e.printStackTrace();
             }
         }
         return message;
     }
 
-    public String getLangName(final Language lang) {
-        try {
-            return (lang.getName(lang));
-        } catch (Exception e) {
-            e.printStackTrace();
+    public String getLangName(final Language lang, boolean toEnglish) {
+        if (!toEnglish) {
+            try {
+                return (lang.getName(lang));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
-        return null;
+        return lang.name().substring(0, 1) + lang.name().substring(1).toLowerCase();
     }
 
     private Inventory open() {
         int i = 0;
         Inventory inv = Bukkit.createInventory(null, 54, "Languages");
         for (Language lang : langs) {
-            if (!getLangName(lang).equals("Auto Detect")) {
+            if (!getLangName(lang, false).equals("Auto Detect")) {
                 ItemStack langStack = new ItemStack(Material.BOOK, 1);
                 ItemMeta langMeta = langStack.getItemMeta();
-                langMeta.setDisplayName(getLangName(lang));
+                langMeta.setDisplayName(getLangName(lang, true));
+                langMeta.setLore(Arrays.asList(ChatColor.GRAY + getLangName(lang, false), ChatColor.GRAY + lang.toString()));
                 langStack.setItemMeta(langMeta);
                 inv.setItem(i, langStack);
                 i++;
@@ -287,7 +395,6 @@ public class Main extends JavaPlugin implements Listener {
         }
         return inv;
     }
-
     public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
         if (args.length == 0) {
             if (sender instanceof Player) {
@@ -301,16 +408,16 @@ public class Main extends JavaPlugin implements Listener {
                 if (args[0].equalsIgnoreCase("reset")) {
                     if (sender instanceof Player) {
                         playerLang.put(((Player) sender).getUniqueId(), defaultLang);
-                        sender.sendMessage(ChatColor.GREEN + "Language reset to " + defaultLangFull);
+                        sender.sendMessage(resetLanguage.replace("%default%", defaultLangFull));
                     }
                 } else if (args[0].equalsIgnoreCase("set")) {
-                    sender.sendMessage(ChatColor.RED + "Invalid language. Possible choices: ");
+                    sender.sendMessage(invalidLanguage);
                     Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
                         @Override
                         public void run() {
                             String langList = "";
                             for (Language lang : langs) {
-                                langList += ", " + getLangName(lang);
+                                langList += ", " + getLangName(lang, false);
                             }
                             sender.sendMessage(langList.substring(2));
                         }
@@ -325,17 +432,17 @@ public class Main extends JavaPlugin implements Listener {
                         public void run() {
                             boolean success = false;
                             for (Language lang : langs) {
-                                if (!success && getLangName(lang).equalsIgnoreCase(args[1])) {
+                                if (!success && getLangName(lang, true).equalsIgnoreCase(args[1]) || getLangName(lang, false).equalsIgnoreCase(args[1]) || lang.toString().equalsIgnoreCase(args[1])) {
                                     playerLang.put(((Player) sender).getUniqueId(), lang.toString());
-                                    sender.sendMessage(ChatColor.GREEN + "Language changed to " + getLangName(lang));
+                                    sender.sendMessage(changeLanguage.replace("%name%", getLangName(lang, true)));
                                     success = true;
                                 }
                             }
                             if (!success) {
-                                sender.sendMessage(ChatColor.RED + "Invalid language. Possible choices: ");
+                                sender.sendMessage(invalidLanguage);
                                 String langList = "";
                                 for (Language lang : langs) {
-                                    langList += ", " + getLangName(lang);
+                                    langList += ", " + getLangName(lang, true);
                                 }
                                 sender.sendMessage(langList.substring(2));
                             }
