@@ -66,6 +66,7 @@ public class Main extends JavaPlugin implements Listener {
     private String changeLanguage = "";
     private String resetLanguage = "";
     private String invalidLanguage = "";
+    private boolean debug;
 
     private Language[] langs;
     private Inventory langInv;
@@ -99,7 +100,8 @@ public class Main extends JavaPlugin implements Listener {
                     }
                 }
             });
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            error(e.getMessage());
         }
 
         bypassPrefix = getConfig().getString("bypass prefix", ">");
@@ -110,6 +112,7 @@ public class Main extends JavaPlugin implements Listener {
         changeLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.change", "&aLanguage successfully changed to %name%."));
         resetLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.reset", "&aLanguage reset to %default%."));
         invalidLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.invalid", "&cInvalid language. Possible choices:"));
+        debug = getConfig().getBoolean("debug", false);
 
         int i = 0;
         while (getConfig().contains("keys." + i + ".id")) {
@@ -120,10 +123,11 @@ public class Main extends JavaPlugin implements Listener {
 
         URLConnection con = null;
         try {
-            URL url = new URL("https://pantherman594.com/translateKeys");
+            URL url = new URL("http://trans.pantherman594.com/translateKeys");
             con = url.openConnection();
         } catch (IOException e) {
             getLogger().log(Level.WARNING, "Invalid key link. Please contact plugin author.");
+            error(e.getMessage());
         }
 
         if (con != null) {
@@ -132,16 +136,13 @@ public class Main extends JavaPlugin implements Listener {
                     BufferedReader reader = new BufferedReader(isr)
             ) {
                 String line;
-                i = 0;
                 while ((line = reader.readLine()) != null) {
-                    ids.put(0, line.split(";")[0]);
-                    secrets.put(0, line.split(";")[1]);
-                    i++;
+                    ids.put(ids.size(), line.split(";")[0]);
+                    secrets.put(secrets.size(), line.split(";")[1]);
                 }
             } catch (IOException e) {
                 getLogger().log(Level.WARNING, "Unable to read keys from link. Please contact plugin author.");
-                getPluginLoader().disablePlugin(this);
-                return;
+                error(e.getMessage());
             }
         }
 
@@ -395,6 +396,13 @@ public class Main extends JavaPlugin implements Listener {
         }
         return inv;
     }
+
+    private void error(String message) {
+        if (debug) {
+            getLogger().log(Level.SEVERE, message);
+        }
+    }
+
     public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
         if (args.length == 0) {
             if (sender instanceof Player) {

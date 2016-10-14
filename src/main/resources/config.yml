@@ -9,6 +9,7 @@ messages:
   change: '&aLanguage successfully changed to %name%.'
   reset: '&aLanguage reset to %default%.'
   invalid: '&cInvalid language. Possible choices:'
+debug: false
 
 # keys: #Custom keys (only necessary if you want to use your own, it will automatically download a list of keys to use)
 #   '0':
