@@ -19,7 +19,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.memetix.mst.language.Language;
 import com.memetix.mst.translate.Translate;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -172,6 +171,11 @@ public class Main extends JavaPlugin implements Listener {
                 }
             }
         });
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (!playerLang.containsKey(p.getUniqueId())) {
+                playerLang.put(p.getUniqueId(), p.spigot().getLocale());
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -252,7 +256,7 @@ public class Main extends JavaPlugin implements Listener {
 
     public void translatePacket(PacketEvent event) {
         PacketContainer packet = event.getPacket();
-        final String initialJsonS = StringEscapeUtils.unescapeJava(packet.getChatComponents().read(0).getJson());
+        final String initialJsonS = /*StringEscapeUtils.unescapeJava*/(packet.getChatComponents().read(0).getJson());
         if (initialJsonS != null && !initialJsonS.equals("")) {
             JsonObject packetJson = new Gson().fromJson(initialJsonS, JsonObject.class);
 
@@ -319,18 +323,18 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     public String translateMessage(String message, final String from, final String to, final Integer index) {
+        if (from.equals(to)) {
+            return message;
+        }
         if (!message.replaceAll("[^\\p{L} /]+", "").equals(message)) {
             String finalMsg = message;
             for (final String msg : message.split("[^\\p{L} /]+")) {
                 if (!msg.equals(" ") && !msg.equals("/")) {
-                    String newMsg = translateMessage(msg, "", to, index);
+                    String newMsg = translateMessage(msg, from, to, index);
                     finalMsg = finalMsg.replaceFirst(msg, newMsg);
                 }
             }
             return finalMsg;
-        }
-        if (from.equals(to)) {
-            return message;
         }
         setKeys();
         try {
@@ -359,7 +363,7 @@ public class Main extends JavaPlugin implements Listener {
             return msg;
         } catch (Exception e) {
             if (index < 10) {
-                return translateMessage(message, "", to, index + 1);
+                return translateMessage(message, from, to, index + 1);
             } else {
                 getLogger().log(Level.WARNING, "Translation failed. Original message: " + message);
                 getLogger().log(Level.WARNING, "Error: ");
