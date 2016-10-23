@@ -63,7 +63,6 @@ public class Main extends JavaPlugin implements Listener {
     private boolean translateChat;
     private boolean translateServer;
     private boolean translateInventory;
-    private boolean translateCommands;
     private String changeLanguage = "";
     private String resetLanguage = "";
     private String invalidLanguage = "";
@@ -110,7 +109,6 @@ public class Main extends JavaPlugin implements Listener {
         translateChat = getConfig().getBoolean("translate.chat", true);
         translateServer = getConfig().getBoolean("translate.server", true);
         translateInventory = getConfig().getBoolean("translate.inventory", true);
-        translateCommands = getConfig().getBoolean("translate.commands in messages", false);
         changeLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.change", "&aLanguage successfully changed to %name%."));
         resetLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.reset", "&aLanguage reset to %default%."));
         invalidLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.invalid", "&cInvalid language. Possible choices:"));
@@ -199,7 +197,7 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void open(InventoryOpenEvent event) {
         String lang = getLanguage((Player) event.getPlayer());
-        if (translateInventory && !lang.equals(defaultLang) && event.getInventory().getLocation() == null) {
+        if (translateInventory && !(lang.equals(defaultLang) || lang.equals("")) && event.getInventory().getLocation() == null) {
             if (event.getInventory().getTitle() != null && event.getInventory().getTitle().equals("Languages")) return;
             for (int i = 0; i < event.getInventory().getSize(); i++) {
                 if (event.getInventory().getItem(i) != null && event.getInventory().getItem(i).getItemMeta() != null) {
@@ -320,9 +318,12 @@ public class Main extends JavaPlugin implements Listener {
 
     public String getLanguage(final Player player) {
         if (playerLang.containsKey(player.getUniqueId())) {
-            return playerLang.get(player.getUniqueId());
+            String lang = playerLang.get(player.getUniqueId());
+            if (Language.fromString(lang) != null) {
+                return playerLang.get(player.getUniqueId());
+            }
         }
-        return "en";
+        return "";
     }
 
     public void setKeys() {
@@ -334,7 +335,10 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
 
-    public String translateMessage(String message, final String from, final String to, final Integer index) {
+    public String translateMessage(String message, final String from, String to, final Integer index) {
+        if (to.equals("")) {
+            to = defaultLang;
+        }
         debug("Translating from " + from + " to " + to + ": " + message);
         if (from.equals(to)) {
             return message;
@@ -382,22 +386,17 @@ public class Main extends JavaPlugin implements Listener {
             return msg;
         } catch (Exception e) {
             if (index < 10) {
-                String msg = translateMessage(message, from, to, index + 1);
-				for (int i = matches; i > 0; --i) {
-					String[] match = whitelistCache.get(i).split(";", 2);
-					msg = msg.replace(match[0], match[1]);
-				}
-				return msg;
+                return translateMessage(message, from, to, index + 1);
             } else {
                 getLogger().log(Level.WARNING, "Translation failed. Original message: " + message);
                 getLogger().log(Level.WARNING, "Error: ");
                 e.printStackTrace();
             }
         }
-		for (int i = matches; i > 0; --i) {
-			String[] match = whitelistCache.get(i).split(";", 2);
-			message = message.replace(match[0], match[1]);
-		}
+        for (int i = matches; i > 0; --i) {
+            String[] match = whitelistCache.get(i).split(";", 2);
+            message = message.replace(match[0], match[1]);
+        }
         return message;
     }
 
