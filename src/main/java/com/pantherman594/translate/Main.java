@@ -266,8 +266,12 @@ public class Main extends JavaPlugin implements Listener {
                 JsonArray newArray = new JsonArray();
 
                 for (JsonElement element : jsonArray) {
-                    if (!element.isJsonObject()) continue;
-                    final String initialMsg = element.getAsJsonObject().get("text").getAsString();
+                    String initialMsg;
+                    if (!element.isJsonObject()) {
+                        initialMsg = element.getAsString();
+                    } else {
+                        initialMsg = element.getAsJsonObject().get("text").getAsString();
+                    }
 
                     if (initialMsg != null && !initialMsg.equals("")) {
                         String msg = initialMsg.startsWith(" ") ? initialMsg.substring(1) : initialMsg;
