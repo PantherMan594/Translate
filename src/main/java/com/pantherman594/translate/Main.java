@@ -375,16 +375,29 @@ public class Main extends JavaPlugin implements Listener {
                 msg = from.equals("") ? Translate.execute(message, Language.fromString(to)) : Translate.execute(message, from, to);
                 transCache.put(key, msg);
             }
+            for (int i = matches; i < 0; --i) {
+                String[] match = whitelistCache.get(i).split(";", 2);
+                msg = msg.replace(match[0], match[1]);
+            }
             return msg;
         } catch (Exception e) {
             if (index < 10) {
-                return translateMessage(message, from, to, index + 1);
+                String msg = translateMessage(message, from, to, index + 1);
+				for (int i = matches; i < 0; --i) {
+					String[] match = whitelistCache.get(i).split(";", 2);
+					msg = msg.replace(match[0], match[1]);
+				}
+				return msg;
             } else {
                 getLogger().log(Level.WARNING, "Translation failed. Original message: " + message);
                 getLogger().log(Level.WARNING, "Error: ");
                 e.printStackTrace();
             }
         }
+		for (int i = matches; i < 0; --i) {
+			String[] match = whitelistCache.get(i).split(";", 2);
+			message = message.replace(match[0], match[1]);
+		}
         return message;
     }
 
