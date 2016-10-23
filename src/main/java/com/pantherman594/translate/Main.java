@@ -67,7 +67,7 @@ public class Main extends JavaPlugin implements Listener {
     private String resetLanguage = "";
     private String invalidLanguage = "";
     private boolean debug;
-    private Set<String> whitelist = new HashSet<>();
+    private Set<String> blacklist = new HashSet<>();
 
     private Language[] langs;
     private Inventory langInv;
@@ -112,7 +112,7 @@ public class Main extends JavaPlugin implements Listener {
         changeLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.change", "&aLanguage successfully changed to %name%."));
         resetLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.reset", "&aLanguage reset to %default%."));
         invalidLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.invalid", "&cInvalid language. Possible choices:"));
-        whitelist.addAll(getConfig().getStringList("whitelist"));
+        blacklist.addAll(getConfig().getStringList("blacklist"));
         debug = getConfig().getBoolean("debug", false);
 
         int i = 0;
@@ -346,7 +346,7 @@ public class Main extends JavaPlugin implements Listener {
         HashMap<Integer, String> whitelistCache = new HashMap<>();
         int matches = 0;
 
-        for (String rule : whitelist) {
+        for (String rule : blacklist) {
             Matcher matcher = Pattern.compile(rule).matcher(message);
             while (matcher.find()) {
                 String result = message.substring(matcher.start(), matcher.end());
