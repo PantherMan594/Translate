@@ -4,11 +4,12 @@ translate:
   chat: true
   server: true
   inventory: true
-  commands in messages: false # Whether to translate messages that start with a command
 messages:
   change: '&aLanguage successfully changed to %name%.'
   reset: '&aLanguage reset to %default%.'
   invalid: '&cInvalid language. Possible choices:'
+whitelist:
+- '\/\w+'
 debug: false
 
 # keys: #Custom keys (only necessary if you want to use your own, it will automatically download a list of keys to use)

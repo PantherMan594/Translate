@@ -44,6 +44,8 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.*;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @SuppressWarnings("WeakerAccess")
 public class Main extends JavaPlugin implements Listener {
@@ -66,6 +68,7 @@ public class Main extends JavaPlugin implements Listener {
     private String resetLanguage = "";
     private String invalidLanguage = "";
     private boolean debug;
+    private Set<String> whitelist = new HashSet<>();
 
     private Language[] langs;
     private Inventory langInv;
@@ -111,6 +114,7 @@ public class Main extends JavaPlugin implements Listener {
         changeLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.change", "&aLanguage successfully changed to %name%."));
         resetLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.reset", "&aLanguage reset to %default%."));
         invalidLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.invalid", "&cInvalid language. Possible choices:"));
+        whitelist.addAll(getConfig().getStringList("whitelist"));
         debug = getConfig().getBoolean("debug", false);
 
         int i = 0;
@@ -335,6 +339,18 @@ public class Main extends JavaPlugin implements Listener {
         if (from.equals(to)) {
             return message;
         }
+        HashMap<Integer, String> whitelistCache = new HashMap<>();
+        int matches = 0;
+
+        for (String rule : whitelist) {
+            Matcher matcher = Pattern.compile(rule).matcher(message);
+            while (matcher.find()) {
+                String result = message.substring(matcher.start(), matcher.end());
+                String rand = UUID.randomUUID().toString().split("-")[0];
+                message = message.replace(result, rand);
+                whitelistCache.put(matches++, rand + ";" + result);
+            }
+        }
         if (!message.replaceAll("[^\\p{L} /]+", "").equals(message)) {
             String finalMsg = message;
             for (final String msg : message.split("[^\\p{L} /]+")) {
@@ -343,21 +359,14 @@ public class Main extends JavaPlugin implements Listener {
                     finalMsg = finalMsg.replaceFirst(msg, newMsg);
                 }
             }
+            for (int i = matches; i < 0; --i) {
+                String[] match = whitelistCache.get(i).split(";", 2);
+                finalMsg = finalMsg.replace(match[0], match[1]);
+            }
             return finalMsg;
         }
         setKeys();
         try {
-            HashMap<String, String> commandCache = new HashMap<>();
-            if (!translateCommands && message.contains("/")) {
-                String[] words = message.split(" ");
-                for (String word : words) {
-                    if (word.startsWith("/")) {
-                        String rand = UUID.randomUUID().toString().split("-")[0];
-                        commandCache.put(rand, word);
-                        message = message.replace(word, "" + rand);
-                    }
-                }
-            }
             String key = to + ">" + message;
             String msg;
             if (transCache.containsKey(key)) {
@@ -365,9 +374,6 @@ public class Main extends JavaPlugin implements Listener {
             } else {
                 msg = from.equals("") ? Translate.execute(message, Language.fromString(to)) : Translate.execute(message, from, to);
                 transCache.put(key, msg);
-            }
-            for (String rand : commandCache.keySet()) {
-                msg = msg.replace("" + rand, commandCache.get(rand));
             }
             return msg;
         } catch (Exception e) {
