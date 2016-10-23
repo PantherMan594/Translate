@@ -359,7 +359,7 @@ public class Main extends JavaPlugin implements Listener {
                     finalMsg = finalMsg.replaceFirst(msg, newMsg);
                 }
             }
-            for (int i = matches; i < 0; --i) {
+            for (int i = matches; i > 0; --i) {
                 String[] match = whitelistCache.get(i).split(";", 2);
                 finalMsg = finalMsg.replace(match[0], match[1]);
             }
@@ -375,7 +375,7 @@ public class Main extends JavaPlugin implements Listener {
                 msg = from.equals("") ? Translate.execute(message, Language.fromString(to)) : Translate.execute(message, from, to);
                 transCache.put(key, msg);
             }
-            for (int i = matches; i < 0; --i) {
+            for (int i = matches; i > 0; --i) {
                 String[] match = whitelistCache.get(i).split(";", 2);
                 msg = msg.replace(match[0], match[1]);
             }
@@ -383,7 +383,7 @@ public class Main extends JavaPlugin implements Listener {
         } catch (Exception e) {
             if (index < 10) {
                 String msg = translateMessage(message, from, to, index + 1);
-				for (int i = matches; i < 0; --i) {
+				for (int i = matches; i > 0; --i) {
 					String[] match = whitelistCache.get(i).split(";", 2);
 					msg = msg.replace(match[0], match[1]);
 				}
@@ -394,7 +394,7 @@ public class Main extends JavaPlugin implements Listener {
                 e.printStackTrace();
             }
         }
-		for (int i = matches; i < 0; --i) {
+		for (int i = matches; i > 0; --i) {
 			String[] match = whitelistCache.get(i).split(";", 2);
 			message = message.replace(match[0], match[1]);
 		}
