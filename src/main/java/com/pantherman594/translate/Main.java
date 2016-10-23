@@ -435,7 +435,9 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     private void debug(String message) {
-        getLogger().log(Level.INFO, "[DEBUG] " + message);
+        if (debug) {
+            getLogger().log(Level.INFO, "[DEBUG] " + message);
+        }
     }
 
     public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
