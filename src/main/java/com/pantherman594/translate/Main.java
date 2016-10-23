@@ -256,7 +256,8 @@ public class Main extends JavaPlugin implements Listener {
 
     public void translatePacket(PacketEvent event) {
         PacketContainer packet = event.getPacket();
-        final String initialJsonS = /*StringEscapeUtils.unescapeJava*/(packet.getChatComponents().read(0).getJson());
+        final String initialJsonS = packet.getChatComponents().read(0).getJson();
+        debug("Initial Message JSON: " + initialJsonS);
         if (initialJsonS != null && !initialJsonS.equals("")) {
             JsonObject packetJson = new Gson().fromJson(initialJsonS, JsonObject.class);
 
@@ -323,6 +324,7 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     public String translateMessage(String message, final String from, final String to, final Integer index) {
+        debug("Translating from " + from + " to " + to + ": " + message);
         if (from.equals(to)) {
             return message;
         }
@@ -405,6 +407,10 @@ public class Main extends JavaPlugin implements Listener {
         if (debug) {
             getLogger().log(Level.SEVERE, message);
         }
+    }
+
+    private void debug(String message) {
+        getLogger().log(Level.INFO, "[DEBUG] " + message);
     }
 
     public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
