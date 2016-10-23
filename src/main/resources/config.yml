@@ -8,8 +8,9 @@ messages:
   change: '&aLanguage successfully changed to %name%.'
   reset: '&aLanguage reset to %default%.'
   invalid: '&cInvalid language. Possible choices:'
-whitelist:
-- '\/\w+'
+whitelist: # Uses regular expressions. You can test expressions or get help from http://regexr.com/
+- '\/\w+' # Matches a forward slash (escaped with a back slash) followed by 1 or more alphanumeric characters
+- '("|'').*\1' # Matches any character except line breaks within either double or single quotes (including the quotes, the quotes have to match)
 debug: false
 
 # keys: #Custom keys (only necessary if you want to use your own, it will automatically download a list of keys to use)
