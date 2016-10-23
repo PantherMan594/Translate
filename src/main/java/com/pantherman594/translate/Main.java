@@ -266,25 +266,27 @@ public class Main extends JavaPlugin implements Listener {
                 JsonArray newArray = new JsonArray();
 
                 for (JsonElement element : jsonArray) {
+                    JsonObject newObject = new JsonObject();
                     String initialMsg;
                     if (!element.isJsonObject()) {
                         initialMsg = element.getAsString();
                     } else {
-                        initialMsg = element.getAsJsonObject().get("text").getAsString();
+                        newObject = element.getAsJsonObject();
+                        initialMsg = newObject.get("text").getAsString();
                     }
 
                     if (initialMsg != null && !initialMsg.equals("")) {
                         String msg = initialMsg.startsWith(" ") ? initialMsg.substring(1) : initialMsg;
                         if (origMsgs.containsKey(msg) && origMsgs.get(msg) == null) {
-                            element.getAsJsonObject().addProperty("text", initialMsg);
-                            newArray.add(element);
+                            newObject.addProperty("text", initialMsg);
+                            newArray.add(newObject);
                             continue;
                         }
 
                         final String tMsg = translateMessage(initialMsg, defaultLang, getLanguage(event.getPlayer()), 0);
-                        element.getAsJsonObject().addProperty("text", tMsg);
+                        newObject.addProperty("text", tMsg);
 
-                        if (element.getAsJsonObject().get("hoverEvent") == null) {
+                        if (newObject.get("hoverEvent") == null) {
                             if (origMsgs.containsKey(msg)) {
                                 msg = origMsgs.get(msg);
                             }
@@ -297,12 +299,12 @@ public class Main extends JavaPlugin implements Listener {
                                 hoverText.addProperty("text", msg);
                                 hoverInfo.add("value", hoverText);
 
-                                element.getAsJsonObject().add("hoverEvent", hoverInfo);
+                                newObject.add("hoverEvent", hoverInfo);
                             }
                         }
                     }
 
-                    newArray.add(element);
+                    newArray.add(newObject);
                 }
 
                 packetJson.remove("extra");
