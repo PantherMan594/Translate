@@ -260,7 +260,7 @@ public class Main extends JavaPlugin implements Listener {
         PacketContainer packet = event.getPacket();
         final String initialJsonS = packet.getChatComponents().read(0).getJson();
         debug("Initial Message JSON: " + initialJsonS);
-        if (initialJsonS != null && !initialJsonS.equals("")) {
+        if (initialJsonS != null && !initialJsonS.equals("") && !initialJsonS.equals("\"\"")) {
             JsonObject packetJson = new Gson().fromJson(initialJsonS, JsonObject.class);
 
             if (packetJson.get("extra") != null) {
