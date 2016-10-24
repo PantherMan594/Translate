@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.pantherman594</groupId>
     <artifactId>Translate</artifactId>
-    <version>1.6</version>
+    <version>1.7</version>
     <packaging>jar</packaging>
     <name>Translate</name>
     <description>Powerful and effective hands-free translator!</description>
