@@ -343,7 +343,7 @@ public class Main extends JavaPlugin implements Listener {
         if (from.equals(to)) {
             return message;
         }
-        HashMap<Integer, String> whitelistCache = new HashMap<>();
+        HashMap<Integer, String> blacklistCache = new HashMap<>();
         int matches = 0;
 
         for (String rule : blacklist) {
@@ -352,7 +352,7 @@ public class Main extends JavaPlugin implements Listener {
                 String result = message.substring(matcher.start(), matcher.end());
                 String rand = UUID.randomUUID().toString().split("-")[0];
                 message = message.replace(result, rand);
-                whitelistCache.put(matches++, rand + ";" + result);
+                blacklistCache.put(matches++, rand + ";" + result);
             }
         }
         if (!message.replaceAll("[^\\p{L} /]+", "").equals(message)) {
@@ -363,11 +363,7 @@ public class Main extends JavaPlugin implements Listener {
                     finalMsg = finalMsg.replaceFirst(msg, newMsg);
                 }
             }
-            for (int i = matches; i > 0; --i) {
-                String[] match = whitelistCache.get(i).split(";", 2);
-                finalMsg = finalMsg.replace(match[0], match[1]);
-            }
-            return finalMsg;
+            return replacePlaceholders(blacklistCache, finalMsg);
         }
         setKeys();
         try {
@@ -379,11 +375,7 @@ public class Main extends JavaPlugin implements Listener {
                 msg = from.equals("") ? Translate.execute(message, Language.fromString(to)) : Translate.execute(message, from, to);
                 transCache.put(key, msg);
             }
-            for (int i = matches; i > 0; --i) {
-                String[] match = whitelistCache.get(i).split(";", 2);
-                msg = msg.replace(match[0], match[1]);
-            }
-            return msg;
+            return replacePlaceholders(blacklistCache, msg);
         } catch (Exception e) {
             if (index < 10) {
                 return translateMessage(message, from, to, index + 1);
@@ -393,11 +385,17 @@ public class Main extends JavaPlugin implements Listener {
                 e.printStackTrace();
             }
         }
-        for (int i = matches; i > 0; --i) {
-            String[] match = whitelistCache.get(i).split(";", 2);
-            message = message.replace(match[0], match[1]);
+        return replacePlaceholders(blacklistCache, message);
+    }
+
+    public String replacePlaceholders(Map<Integer, String> blacklistCache, String msg) {
+        for (int i = blacklistCache.size(); i > 0; --i) {
+            if (blacklistCache.get(i) != null) {
+                String[] match = blacklistCache.get(i).split(";", 2);
+                msg = msg.replace(match[0], match[1]);
+            }
         }
-        return message;
+        return msg;
     }
 
     public String getLangName(final Language lang, boolean toEnglish) {
