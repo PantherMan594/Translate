@@ -237,7 +237,7 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void interact(InventoryClickEvent event) {
-        if (event.getClickedInventory().getName() != null && event.getClickedInventory().getName().equals("Languages") && event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.BOOK) {
+        if (event.getClickedInventory() != null && event.getClickedInventory().getName() != null && event.getClickedInventory().getName().equals("Languages") && event.getCurrentItem() != null && event.getCurrentItem().getType() != null && event.getCurrentItem().getType() == Material.BOOK) {
             final Player p = (Player) event.getWhoClicked();
             final String name = event.getCurrentItem().getItemMeta().getDisplayName();
             event.setCancelled(true);
