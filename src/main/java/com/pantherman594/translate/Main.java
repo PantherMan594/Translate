@@ -105,74 +105,8 @@ public class Main extends JavaPlugin implements Listener {
             error(e.getMessage());
         }
 
-        bypassPrefix = getConfig().getString("bypass prefix", ">");
-        translateChat = getConfig().getBoolean("translate.chat", true);
-        translateServer = getConfig().getBoolean("translate.server", true);
-        translateInventory = getConfig().getBoolean("translate.inventory", true);
-        changeLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.change", "&aLanguage successfully changed to %name%."));
-        resetLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.reset", "&aLanguage reset to %default%."));
-        invalidLanguage = ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.invalid", "&cInvalid language. Possible choices:"));
-        blacklist.addAll(getConfig().getStringList("blacklist"));
-        debug = getConfig().getBoolean("debug", false);
+        loadConfig();
 
-        int i = 0;
-        while (getConfig().contains("keys." + i + ".id")) {
-            ids.put(i, getConfig().getString("keys." + i + ".id"));
-            secrets.put(i, getConfig().getString("keys." + i + ".secret"));
-            i++;
-        }
-
-        URLConnection con = null;
-        try {
-            URL url = new URL("http://trans.pantherman594.com/translateKeys");
-            con = url.openConnection();
-        } catch (IOException e) {
-            getLogger().log(Level.WARNING, "Invalid key link. Please contact plugin author.");
-            error(e.getMessage());
-        }
-
-        if (con != null) {
-            try (
-                    InputStreamReader isr = new InputStreamReader(con.getInputStream());
-                    BufferedReader reader = new BufferedReader(isr)
-            ) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    ids.put(ids.size(), line.split(";")[0]);
-                    secrets.put(secrets.size(), line.split(";")[1]);
-                }
-            } catch (IOException e) {
-                getLogger().log(Level.WARNING, "Unable to read keys from link. Please contact plugin author.");
-                error(e.getMessage());
-            }
-        }
-
-        if (ids.isEmpty()) {
-            getLogger().log(Level.WARNING, "No keys found. Plugin disabling...");
-            getPluginLoader().disablePlugin(this);
-            return;
-        }
-
-        setKeys();
-        final Configuration config = getConfig();
-        Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
-            @Override
-            public void run() {
-                langs = Language.values();
-                langInv = open();
-                String defaultConfig = config.getString("default language");
-                for (Language lang : langs) {
-                    if (defaultConfig.equals(lang.toString())) {
-                        defaultLang = lang.toString();
-                        defaultLangFull = getLangName(lang, false);
-                    }
-                }
-                if (defaultLang == null) {
-                    defaultLang = Language.ENGLISH.toString();
-                    defaultLangFull = getLangName(Language.ENGLISH, false);
-                }
-            }
-        });
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (!playerLang.containsKey(p.getUniqueId())) {
                 playerLang.put(p.getUniqueId(), p.spigot().getLocale());
@@ -443,6 +377,77 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
 
+    private void loadConfig() {
+        final Configuration config = getConfig();
+        bypassPrefix = config.getString("bypass prefix", ">");
+        translateChat = config.getBoolean("translate.chat", true);
+        translateServer = config.getBoolean("translate.server", true);
+        translateInventory = config.getBoolean("translate.inventory", true);
+        changeLanguage = ChatColor.translateAlternateColorCodes('&', config.getString("messages.change", "&aLanguage successfully changed to %name%."));
+        resetLanguage = ChatColor.translateAlternateColorCodes('&', config.getString("messages.reset", "&aLanguage reset to %default%."));
+        invalidLanguage = ChatColor.translateAlternateColorCodes('&', config.getString("messages.invalid", "&cInvalid language. Possible choices:"));
+        blacklist.addAll(config.getStringList("blacklist"));
+        debug = config.getBoolean("debug", false);
+
+        int i = 0;
+        while (config.contains("keys." + i + ".id")) {
+            ids.put(i, config.getString("keys." + i + ".id"));
+            secrets.put(i, config.getString("keys." + i + ".secret"));
+            i++;
+        }
+
+        URLConnection con = null;
+        try {
+            URL url = new URL("http://trans.pantherman594.com/translateKeys");
+            con = url.openConnection();
+        } catch (IOException e) {
+            getLogger().log(Level.WARNING, "Invalid key link. Please contact plugin author.");
+            error(e.getMessage());
+        }
+
+        if (con != null) {
+            try (
+                    InputStreamReader isr = new InputStreamReader(con.getInputStream());
+                    BufferedReader reader = new BufferedReader(isr)
+            ) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    ids.put(ids.size(), line.split(";")[0]);
+                    secrets.put(secrets.size(), line.split(";")[1]);
+                }
+            } catch (IOException e) {
+                getLogger().log(Level.WARNING, "Unable to read keys from link. Please contact plugin author.");
+                error(e.getMessage());
+            }
+        }
+
+        if (ids.isEmpty()) {
+            getLogger().log(Level.WARNING, "No keys found. Plugin disabling...");
+            getPluginLoader().disablePlugin(this);
+            return;
+        }
+
+        setKeys();
+        Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+            @Override
+            public void run() {
+                langs = Language.values();
+                langInv = open();
+                String defaultConfig = config.getString("default language");
+                for (Language lang : langs) {
+                    if (defaultConfig.equals(lang.toString())) {
+                        defaultLang = lang.toString();
+                        defaultLangFull = getLangName(lang, false);
+                    }
+                }
+                if (defaultLang == null) {
+                    defaultLang = Language.ENGLISH.toString();
+                    defaultLangFull = getLangName(Language.ENGLISH, false);
+                }
+            }
+        });
+    }
+
     public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
         if (args.length == 0) {
             if (sender instanceof Player) {
@@ -453,25 +458,36 @@ public class Main extends JavaPlugin implements Listener {
             }
         } else {
             if (args.length == 1) {
-                if (args[0].equalsIgnoreCase("reset")) {
-                    if (sender instanceof Player) {
-                        playerLang.put(((Player) sender).getUniqueId(), defaultLang);
-                        sender.sendMessage(resetLanguage.replace("%default%", defaultLangFull));
-                    }
-                } else if (args[0].equalsIgnoreCase("set")) {
-                    sender.sendMessage(invalidLanguage);
-                    Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
-                        @Override
-                        public void run() {
-                            String langList = "";
-                            for (Language lang : langs) {
-                                langList += ", " + getLangName(lang, false);
-                            }
-                            sender.sendMessage(langList.substring(2));
+                switch (args[0].toLowerCase()) {
+                    case "reset":
+                        if (sender instanceof Player) {
+                            playerLang.put(((Player) sender).getUniqueId(), defaultLang);
+                            sender.sendMessage(resetLanguage.replace("%default%", defaultLangFull));
                         }
-                    });
-                } else {
-                    sender.sendMessage(ChatColor.RED + "Usage: /lang [reset|set <lang>]");
+                        break;
+                    case "set":
+                        sender.sendMessage(invalidLanguage);
+                        Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+                            @Override
+                            public void run() {
+                                String langList = "";
+                                for (Language lang : langs) {
+                                    langList += ", " + getLangName(lang, false);
+                                }
+                                sender.sendMessage(langList.substring(2));
+                            }
+                        });
+                        break;
+                    case "reload":
+                        if (sender.hasPermission("translate.reload")) {
+                            loadConfig();
+                            sender.sendMessage(ChatColor.GREEN + "Configuration successfully reloaded.");
+                        } else {
+                            sender.sendMessage(ChatColor.RED + "You don't have permission for that command!");
+                        }
+                        break;
+                    default:
+                        sender.sendMessage(ChatColor.RED + "Usage: /lang [reset|set <lang>|reload]");
                 }
             } else if (args.length == 2) {
                 if (args[0].equalsIgnoreCase("set")) {
