@@ -237,15 +237,13 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void interact(InventoryClickEvent event) {
-        debug("CLICK 0");
+        debug("==START==");
+        debug("INV NAME: " + event.getClickedInventory().getName());
         if (event.getClickedInventory().getName().equals("Languages") && event.getClickedInventory().getLocation() == null) {
-            debug("CLICK 1");
             event.setCancelled(true);
             if (event.getCurrentItem().getType() == Material.BOOK) {
                 final Player p = (Player) event.getWhoClicked();
-                debug("CLICK 2");
                 final String name = event.getCurrentItem().getItemMeta().getDisplayName();
-                debug("CLICK 3");
                 Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
                     @Override
                     public void run() {
