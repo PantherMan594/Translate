@@ -53,29 +53,29 @@ public class Main extends JavaPlugin implements Listener {
     private Map<String, String> transCache = new HashMap<>();
     private Map<String, String> origMsgs = new HashMap<>();
 
-    private Map<Integer, String> ids = new HashMap<>();
-    private Map<Integer, String> secrets = new HashMap<>();
-    private Integer keyId = 0;
+    private Map<Integer, String> ids;
+    private Map<Integer, String> secrets;
+    private int keyId;
 
-    private String defaultLang = "";
-    private String defaultLangFull = "";
-    private String bypassPrefix = ">";
+    private String defaultLang;
+    private String defaultLangFull;
+    private String bypassPrefix;
     private boolean translateChat;
     private boolean translateServer;
     private boolean translateInventory;
-    private String changeLanguage = "";
-    private String resetLanguage = "";
-    private String invalidLanguage = "";
+    private String changeLanguage;
+    private String resetLanguage;
+    private String invalidLanguage;
     private boolean debug;
-    private Set<String> blacklist = new HashSet<>();
+    private Set<String> blacklist;
 
     private Language[] langs;
     private Inventory langInv;
 
     public void onEnable() {
         saveDefaultConfig();
-        getServer().getPluginManager().registerEvents(this, this);
-        boolean pLib = Bukkit.getServer().getPluginManager().getPlugin("ProtocolLib") != null;
+        Bukkit.getPluginManager().registerEvents(this, this);
+        boolean pLib = Bukkit.getPluginManager().getPlugin("ProtocolLib") != null;
         if (pLib) {
             getLogger().log(Level.INFO, "Successfully hooked onto ProtocolLib!");
         } else {
@@ -84,7 +84,6 @@ public class Main extends JavaPlugin implements Listener {
         }
         ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
         try {
-            protocolManager.removePacketListeners(this);
             protocolManager.addPacketListener(new PacketAdapter(this, ListenerPriority.MONITOR, PacketType.Play.Client.SETTINGS, PacketType.Play.Client.CHAT, PacketType.Play.Server.CHAT) {
                 @Override
                 public void onPacketReceiving(PacketEvent event) {
@@ -112,6 +111,10 @@ public class Main extends JavaPlugin implements Listener {
                 playerLang.put(p.getUniqueId(), p.spigot().getLocale());
             }
         }
+    }
+
+    public void onDisable() {
+        ProtocolLibrary.getProtocolManager().removePacketListeners(this);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -378,6 +381,10 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     private void loadConfig() {
+        ids = new HashMap<>();
+        secrets = new HashMap<>();
+        blacklist = new HashSet<>();
+
         final Configuration config = getConfig();
         bypassPrefix = config.getString("bypass prefix", ">");
         translateChat = config.getBoolean("translate.chat", true);
@@ -389,6 +396,7 @@ public class Main extends JavaPlugin implements Listener {
         blacklist.addAll(config.getStringList("blacklist"));
         debug = config.getBoolean("debug", false);
 
+        keyId = 0;
         int i = 0;
         while (config.contains("keys." + i + ".id")) {
             ids.put(i, config.getString("keys." + i + ".id"));
