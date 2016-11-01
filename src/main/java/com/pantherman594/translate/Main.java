@@ -237,22 +237,29 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void interact(InventoryClickEvent event) {
-        if (event.getClickedInventory() != null && event.getClickedInventory().getName() != null && event.getClickedInventory().getName().equals("Languages") && event.getCurrentItem() != null && event.getCurrentItem().getType() != null && event.getCurrentItem().getType() == Material.BOOK) {
-            final Player p = (Player) event.getWhoClicked();
-            final String name = event.getCurrentItem().getItemMeta().getDisplayName();
+        debug("CLICK 0");
+        if (event.getClickedInventory().getName().equals("Languages") && event.getClickedInventory().getLocation() == null) {
+            debug("CLICK 1");
             event.setCancelled(true);
-            Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
-                @Override
-                public void run() {
-                    for (Language lang : langs) {
-                        if (getLangName(lang, true).equalsIgnoreCase(name)) {
-                            playerLang.put(p.getUniqueId(), lang.toString());
-                            p.sendMessage(changeLanguage.replace("%name%", name));
-                            return;
+            if (event.getCurrentItem().getType() == Material.BOOK) {
+                final Player p = (Player) event.getWhoClicked();
+                debug("CLICK 2");
+                final String name = event.getCurrentItem().getItemMeta().getDisplayName();
+                debug("CLICK 3");
+                Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+                    @Override
+                    public void run() {
+                        for (Language lang : langs) {
+                            if (getLangName(lang, true).equalsIgnoreCase(name)) {
+                                playerLang.put(p.getUniqueId(), lang.toString());
+                                p.sendMessage(changeLanguage.replace("%name%", name));
+                                return;
+                            }
                         }
                     }
-                }
-            });
+                });
+                debug("CLICK 4");
+            }
         }
     }
 
