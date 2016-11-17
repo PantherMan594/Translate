@@ -73,13 +73,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot</artifactId>
-            <version>1.10.2</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/libs/spigot.jar</systemPath>
-        </dependency>
-        <dependency>
             <groupId>com.comphenix.protocol</groupId>
             <artifactId>ProtocolLib-API</artifactId>
             <version>4.1.0-SNAPSHOT</version>
