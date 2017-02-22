@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 David Shen. All Rights Reserved.
+ * Copyright (c) 2017 David Shen. All Rights Reserved.
  * Created by PantherMan594.
  */
 
@@ -85,6 +85,22 @@ public class Main extends JavaPlugin implements Listener {
         ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
         try {
             protocolManager.addPacketListener(new PacketAdapter(this, ListenerPriority.MONITOR, PacketType.Play.Client.SETTINGS, PacketType.Play.Client.CHAT, PacketType.Play.Server.CHAT) {
+                @Override
+                public void onPacketReceiving(PacketEvent event) {
+                    if (event.getPacketType() == PacketType.Play.Client.SETTINGS) {
+                        PacketContainer packet = event.getPacket();
+                        playerLang.put(event.getPlayer().getUniqueId(), packet.getStrings().read(0).replaceAll("_\\w+", ""));
+                    }
+                }
+
+                @Override
+                public void onPacketSending(PacketEvent event) {
+                    if ((translateChat && event.getPacketType() == PacketType.Play.Client.CHAT) || (translateServer && event.getPacketType() == PacketType.Play.Server.CHAT)) {
+                        translatePacket(event);
+                    }
+                }
+            });
+            protocolManager.addPacketListener(new PacketAdapter(this, ListenerPriority.MONITOR, PacketType.Play.Server.SCOREBOARD_DISPLAY_OBJECTIVE, PacketType.Play.Server.SCOREBOARD_SCORE) {
                 @Override
                 public void onPacketReceiving(PacketEvent event) {
                     if (event.getPacketType() == PacketType.Play.Client.SETTINGS) {

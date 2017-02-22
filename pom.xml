@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  ~ Copyright (c) 2016 David Shen. All Rights Reserved.
+  ~ Copyright (c) 2017 David Shen. All Rights Reserved.
   ~ Created by PantherMan594.
   -->
 
@@ -16,7 +16,7 @@
     <description>Powerful and effective hands-free translator!</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spigot.version>1.11-R0.1-SNAPSHOT</spigot.version>
+        <spigot.version>1.11.2-R0.1-SNAPSHOT</spigot.version>
     </properties>
     <build>
         <defaultGoal>clean package</defaultGoal>
@@ -75,7 +75,7 @@
         <dependency>
             <groupId>com.comphenix.protocol</groupId>
             <artifactId>ProtocolLib-API</artifactId>
-            <version>4.1.0-SNAPSHOT</version>
+            <version>4.2.0</version>
         </dependency>
     </dependencies>
 </project>
