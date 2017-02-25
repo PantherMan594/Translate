@@ -347,7 +347,7 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     public String replacePlaceholders(Map<Integer, String> blacklistCache, String msg) {
-        for (int i = blacklistCache.size(); i > 0; --i) {
+        for (int i = blacklistCache.size() - 1; i >= 0; i--) {
             if (blacklistCache.get(i) != null) {
                 String[] match = blacklistCache.get(i).split(";", 2);
                 msg = msg.replace(match[0], match[1]);
