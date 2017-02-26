@@ -194,7 +194,7 @@ public class Main extends JavaPlugin implements Listener {
         debug("INV NAME: " + event.getClickedInventory().getName());
         if (event.getClickedInventory().getName().equals("Languages") && event.getClickedInventory().getLocation() == null) {
             event.setCancelled(true);
-            if (event.getCurrentItem().getType() == Material.BOOK) {
+            if (event.getAction().toString().startsWith("PICKUP_") && event.getCurrentItem().getType() == Material.BOOK) {
                 final Player p = (Player) event.getWhoClicked();
                 final String name = event.getCurrentItem().getItemMeta().getDisplayName();
                 Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
@@ -477,6 +477,16 @@ public class Main extends JavaPlugin implements Listener {
             if (sender instanceof Player) {
                 Player p = (Player) sender;
                 p.openInventory(langInv);
+                for (int i = 0; i < p.getOpenInventory().countSlots(); i++) {
+                    ItemStack item = p.getOpenInventory().getItem(i);
+                    if (!item.hasItemMeta() || !item.getItemMeta().hasLore()) continue;
+                    String name = item.getItemMeta().getLore().get(1);
+
+                    if (!(sender.hasPermission("translate.setlang." + name) || sender.hasPermission("translate.setlang.all"))) {
+                        item.setType(Material.BARRIER);
+                        p.getOpenInventory().setItem(i, item);
+                    }
+                }
             } else {
                 sender.sendMessage("Console can't open the language GUI!");
             }
@@ -496,9 +506,16 @@ public class Main extends JavaPlugin implements Listener {
                             public void run() {
                                 String langList = "";
                                 for (Language lang : langs) {
-                                    langList += ", " + getLangName(lang, false);
+                                    if (sender.hasPermission("translate.setlang." + lang.toString()) || sender.hasPermission("translate.setlang.all")) {
+                                        langList += ", " + getLangName(lang, false);
+                                    }
                                 }
-                                sender.sendMessage(langList.substring(2));
+
+                                if (langList.equals("")) {
+                                    sender.sendMessage(ChatColor.RED + "You don't have permission to set any languages.");
+                                } else {
+                                    sender.sendMessage(langList.substring(2));
+                                }
                             }
                         });
                         break;
@@ -521,18 +538,29 @@ public class Main extends JavaPlugin implements Listener {
                             boolean success = false;
                             for (Language lang : langs) {
                                 if (!success && getLangName(lang, true).equalsIgnoreCase(args[1]) || getLangName(lang, false).equalsIgnoreCase(args[1]) || lang.toString().equalsIgnoreCase(args[1])) {
-                                    playerLang.put(((Player) sender).getUniqueId(), lang.toString());
-                                    sender.sendMessage(changeLanguage.replace("%name%", getLangName(lang, true)));
-                                    success = true;
+                                    if (sender.hasPermission("translate.setlang." + lang.toString()) || sender.hasPermission("translate.setlang.all")) {
+                                        playerLang.put(((Player) sender).getUniqueId(), lang.toString());
+                                        sender.sendMessage(changeLanguage.replace("%name%", getLangName(lang, true)));
+                                        success = true;
+                                    } else {
+                                        sender.sendMessage(ChatColor.RED + "You do not have permission to select that language.");
+                                    }
                                 }
                             }
                             if (!success) {
                                 sender.sendMessage(invalidLanguage);
                                 String langList = "";
                                 for (Language lang : langs) {
-                                    langList += ", " + getLangName(lang, true);
+                                    if (sender.hasPermission("translate.setlang." + lang.toString()) || sender.hasPermission("translate.setlang.all")) {
+                                        langList += ", " + getLangName(lang, true);
+                                    }
                                 }
-                                sender.sendMessage(langList.substring(2));
+
+                                if (langList.equals("")) {
+                                    sender.sendMessage(ChatColor.RED + "You don't have permission to set any languages.");
+                                } else {
+                                    sender.sendMessage(langList.substring(2));
+                                }
                             }
                         }
                     });
